@@ -4,7 +4,7 @@ const Evento = require("./evento");
 const Cupon = require("./cupon");
 const CategoriaUser = require("./categoriaUser");
 const Utilizador = require("./utilizador");
-require("./relacionamentos");
+const relacionamentos=require("./relacionamentos");
 const conexaoDB = require("../utils/database");
 
 const inicializarDB = async () => {

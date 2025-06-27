@@ -22,4 +22,7 @@ router.post("/cupons", organizadorController.criarCupon);
 
 router.post("/bilhetes", organizadorController.criarBilhete);
 
+
+router.get("/bilhetes/:id", organizadorController.verBilhetePorId);
+
 module.exports = router;

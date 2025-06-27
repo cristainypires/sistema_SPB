@@ -1,7 +1,6 @@
 const { Evento, Bilhete } = require("../models");
 const Cupon = require("../models/cupon");
 
-
 // Função chamada por: POST /eventos
 exports.criarEvento = async (req, res) => {
   const {
@@ -46,7 +45,7 @@ exports.criarEvento = async (req, res) => {
 exports.listarMeusEventos = async (req, res) => {
   try {
     const eventos = await Evento.findAll({
-      where: { organizadorId: req.params.Idorganizer }, 
+      where: { organizadorId: req.params.Idorganizer },
     });
     res.json(eventos);
   } catch (error) {
@@ -67,7 +66,6 @@ exports.atualizarEvento = async (req, res) => {
       return res.status(404).json({ msg: "Evento não encontrado." });
     }
 
-  
     await Evento.update(
       { titulo, data, descricao, local, preco, quantidadeTotal },
       { where: { id: eventoId } }
@@ -96,8 +94,6 @@ exports.removerEvento = async (req, res) => {
   }
 };
 
-
-
 // Função chamada por: PUT /eventos/:id/status-venda
 exports.atualizarStatusVenda = async (req, res) => {
   const { statusVenda } = req.body;
@@ -112,8 +108,6 @@ exports.atualizarStatusVenda = async (req, res) => {
     if (!evento) {
       return res.status(404).json({ msg: "Evento não encontrado." });
     }
-
-    
 
     evento.statusVenda = statusVenda;
     await evento.save();
@@ -145,7 +139,6 @@ exports.validarBilhete = async (req, res) => {
       return res.status(400).json({ msg: "Este bilhete foi cancelado." });
     }
 
-
     bilhete.status = "used";
     await bilhete.save();
 
@@ -160,6 +153,13 @@ exports.validarBilhete = async (req, res) => {
 exports.criarCupon = async (req, res) => {
   try {
     const { code, descricao, valor, Dataexpira } = req.body;
+    // Verifica se já existe cupom com o mesmo código
+    const cuponExistente = await Cupon.findOne({ where: { code } });
+    if (cuponExistente) {
+      return res
+        .status(400)
+        .json({ msg: "Já existe um cupom com esse código." });
+    }
     const novoCupon = await Cupon.create({
       code,
       descricao,
@@ -203,3 +203,18 @@ exports.criarBilhete = async (req, res) => {
   }
 };
 
+// Função chamada por: GET /bilhetes/:id
+exports.verBilhetePorId = async (req, res) => {
+  try {
+    const bilhete = await Bilhete.findByPk(req.params.id);
+    if (!bilhete) {
+      return res.status(404).json({ msg: "Bilhete não encontrado." });
+    }
+    res.status(200).json(bilhete);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ msg: "Erro ao buscar bilhete.", erro: error.message });
+  }
+};

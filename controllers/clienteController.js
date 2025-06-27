@@ -1,35 +1,34 @@
-
 const models = require("../models");
 const Cliente = models.Cliente;
 const Evento = models.Evento;
 const Bilhete = models.Bilhete;
 const Cupon = models.Cupon;
 const sequelize = models.sequelize || require("../utils/database");
+const { v4: uuidv4 } = require("uuid");
 
 const { Op } = require("sequelize");
-
-
 
 // Função chamada por: GET /eventos
 exports.listarEventosDisponiveis = async (req, res) => {
   try {
     const eventos = await Evento.findAll({
       where: {
-        
         data: { [Op.gt]: new Date() },
-        
       },
-      include: {
-        model: Cliente,
-        as: "organizador",
-        attributes: ["name"], // Mostra apenas o nome do organizador
-      },
+      include: [
+        {
+          model: Cliente,
+          as: "organizador",
+          attributes: ["nome"], // Corrigido para 'nome' conforme model Cliente
+          required: false, // Permite eventos mesmo sem organizador válido
+        },
+      ],
       order: [["data", "ASC"]], // Ordena por data, mostrando os mais próximos primeiro
     });
     res.json(eventos);
   } catch (error) {
     console.error(error);
-    res.status(500).send("Erro no servidor.");
+    res.status(500).json({ msg: "Erro no servidor.", erro: error.message });
   }
 };
 
@@ -54,13 +53,12 @@ exports.verEvento = async (req, res) => {
   }
 };
 
-
 // Função chamada por: POST /aplicar-cupom
 exports.aplicarCupom = async (req, res) => {
   const { code, eventoId } = req.body;
   try {
     const cupom = await Cupon.findOne({ where: { code: code.toUpperCase() } });
-  
+
     if (!cupom) {
       return res.status(404).json({ msg: "Cupom inválido." });
     }
@@ -81,11 +79,23 @@ exports.aplicarCupom = async (req, res) => {
 // Se um cupom válido for fornecido, aplica o desconto do cupom.
 // Garante que o preço final não fique abaixo de zero.
 exports.comprarBilhetes = async (req, res) => {
-  const { clienteId, eventoId, quantidade, cuponId } = req.body;
+  const {
+    clienteId,
+    eventoId,
+    quantidade,
+    cuponId,
+    tipo,
+    preco,
+    quantidadeDisponivel,
+  } = req.body;
+  if (!tipo || !preco || !quantidadeDisponivel) {
+    return res.status(400).json({
+      msg: "Campos obrigatórios do bilhete (tipo, preco, quantidadeDisponivel) em falta.",
+    });
+  }
   const t = await sequelize.transaction(); // Inicia uma transação
 
   try {
-    
     const evento = await Evento.findByPk(eventoId, {
       transaction: t,
       lock: t.LOCK.UPDATE,
@@ -97,11 +107,10 @@ exports.comprarBilhetes = async (req, res) => {
     }
 
     let precoFinal = evento.preco;
-    
+
     if (cuponId) {
       const cupom = await Cupon.findByPk(cuponId, { transaction: t });
       if (cupom) {
-        
         precoFinal = Math.max(0, evento.preco - cupom.valor);
       }
     }
@@ -110,11 +119,14 @@ exports.comprarBilhetes = async (req, res) => {
     for (let i = 0; i < quantidade; i++) {
       await Bilhete.create(
         {
+          tipo,
+          preco,
+          quantidadeDisponivel,
           precoPago: precoFinal,
           qrCodeData: uuidv4(),
           clienteId,
           eventoId,
-          cuponId: cuponId || null, 
+          cuponId: cuponId || null,
         },
         { transaction: t }
       );
@@ -136,23 +148,15 @@ exports.comprarBilhetes = async (req, res) => {
   }
 };
 
-
-
 // Função chamada por: GET /meus-bilhetes/:userId
 exports.verHistorico = async (req, res) => {
   try {
+    console.log("userId recebido:", req.params.userId);
     const bilhetes = await Bilhete.findAll({
       where: { clienteId: req.params.userId },
-      include: [
-        {
-          model: Evento,
-          as: "evento",
-          attributes: ["titulo", "data", "local"],
-        },
-        { model: Cupon, as: "cupomAplicado", attributes: ["code"] },
-      ],
-      order: [["createdAt", "DESC"]],
+      // Removido order por createdAt pois a coluna não existe
     });
+    console.log("Resultado da busca de bilhetes:", bilhetes);
     res.json(bilhetes);
   } catch (error) {
     console.error(error);
@@ -193,5 +197,21 @@ exports.listarClientes = async (req, res) => {
     res
       .status(500)
       .json({ msg: "Erro ao buscar clientes.", erro: error.message });
+  }
+};
+
+// Função chamada por: GET /bilhetes/:id
+exports.verBilhetePorId = async (req, res) => {
+  try {
+    const bilhete = await Bilhete.findByPk(req.params.id);
+    if (!bilhete) {
+      return res.status(404).json({ msg: "Bilhete não encontrado." });
+    }
+    res.status(200).json(bilhete);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ msg: "Erro ao buscar bilhete.", erro: error.message });
   }
 };

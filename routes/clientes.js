@@ -15,10 +15,13 @@ router.post("/avaliar-evento", clienteController.avaliarEvento);
 
 router.post("/aplicar-cupom", clienteController.aplicarCupom);
 
-// Adiciona um novo cliente
+
 router.post("/", clienteController.criarCliente);
 
-// Adiciona rota para listar todos os clientes
+
 router.get("/", clienteController.listarClientes);
+
+
+router.get("/bilhetes/:id", clienteController.verBilhetePorId);
 
 module.exports = router;
