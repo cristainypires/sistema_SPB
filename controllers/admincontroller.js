@@ -4,7 +4,7 @@ const sequelize = require("../utils/database");
 // Função para aprovar um evento
 exports.aprovarEvento = async (req, res) => {
   try {
-    const evento = await Evento.findByPk(req.body.eventoId); // Corrigido para buscar pelo body
+    const evento = await Evento.findByPk(req.body.eventoId); 
     if (!evento) {
       return res.status(404).json({ msg: "Evento não encontrado." });
     }
@@ -22,7 +22,7 @@ exports.aprovarEvento = async (req, res) => {
 // Função para rejeitar um evento
 exports.rejeitarEvento = async (req, res) => {
   try {
-    const evento = await Evento.findByPk(req.body.eventoId); // Corrigido para buscar pelo body
+    const evento = await Evento.findByPk(req.body.eventoId); 
     if (!evento) {
       return res.status(404).json({ msg: "Evento não encontrado." });
     }

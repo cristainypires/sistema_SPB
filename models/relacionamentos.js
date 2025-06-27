@@ -58,7 +58,7 @@ Bilhete.belongsTo(Cliente, {
 });
 
 
-// Regra: "um bilhete tem um copun"
+
 
 Cupon.hasMany(Bilhete, {
   foreignKey: {
