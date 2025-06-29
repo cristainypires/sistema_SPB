@@ -93,8 +93,8 @@ exports.comprarBilhetes = async (req, res) => {
       msg: "Campos obrigatórios do bilhete (tipo, preco, quantidadeDisponivel) em falta.",
     });
   }
-  
-
+  // Corrigido: definir a transação antes do try
+  const t = await sequelize.transaction();
   try {
     const evento = await Evento.findByPk(eventoId, {
       transaction: t,
@@ -139,7 +139,6 @@ exports.comprarBilhetes = async (req, res) => {
     await t.commit();
     res.status(201).json({ msg: "Compra realizada com sucesso!" });
   } catch (error) {
-  
     res
       .status(500)
       .json({ msg: error.message || "Erro ao processar a compra." });
@@ -152,7 +151,6 @@ exports.verHistorico = async (req, res) => {
     console.log("userId recebido:", req.params.userId);
     const bilhetes = await Bilhete.findAll({
       where: { clienteId: req.params.userId },
-      
     });
     console.log("Resultado da busca de bilhetes:", bilhetes);
     res.json(bilhetes);
